@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator-api
+  namespace: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+  labels:
+    app: orchestrator-api
+spec:
+  replicas: {{ .Values.components.api.replicas }}
+  selector:
+    matchLabels:
+      app: orchestrator-api
+  template:
+    metadata:
+      labels:
+        app: orchestrator-api
+    spec:
+      containers:
+        - name: orchestrator-api
+          image: {{ include "stream-orchestrator.image" (list . .Values.components.api.image) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "stream-orchestrator.dbSecretName" . }}
+                  key: {{ include "stream-orchestrator.dbSecretKey" . }}
+          ports:
+            - name: http
+              containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrator-api
+  namespace: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+  labels:
+    app: orchestrator-api
+spec:
+  selector:
+    app: orchestrator-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+

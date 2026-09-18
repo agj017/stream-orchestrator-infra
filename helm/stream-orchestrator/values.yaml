@@ -1,0 +1,175 @@
+global:
+  imageRegistry: stream-orchestrator
+  imagePullPolicy: IfNotPresent
+  clusterDomain: cluster.local
+
+namespaces:
+  create: true
+  orchestrator: orchestrator
+  streaming: streaming
+  monitoring: monitoring
+
+config:
+  rabbitmqExchange: stream.events
+  rabbitmqProvisionQueue: stream.provision
+  rabbitmqStreamCreatedRoutingKey: stream.created
+  rabbitmqStreamStopRequestedRoutingKey: stream.stop_requested
+  outboxPollInterval: 500ms
+  outboxBatchSize: 100
+  outboxMaxRetry: 20
+  mediamtxPodSelector: app=mediamtx
+  mediamtxControlScheme: http
+  mediamtxControlTimeout: 5s
+  mediamtxSourceOnDemand: true
+  streamProvider: mediamtx
+  defaultMaxStreams: 500
+  defaultMaxBandwidthMbps: 5000
+  scalerInterval: 15s
+  scalerMinReplicas: 1
+  scalerMaxReplicas: 20
+  scalerTargetUtilization: "0.7"
+  scalerBufferReplicas: 1
+  collectTimeout: 5s
+  collectConcurrency: 10
+  reconcileInterval: 10s
+  heartbeatTimeout: 30s
+  logLevel: info
+  logFormat: text
+  dbLogQueries: false
+  dbLogQueryArgs: false
+  dbLogSql: false
+
+secrets:
+  mediamtxControlUsername: ""
+  mediamtxControlPassword: ""
+
+database:
+  external:
+    url: ""
+    existingSecret: ""
+    existingSecretKey: DB_URL
+
+rabbitmqConnection:
+  external:
+    url: ""
+    existingSecret: ""
+    existingSecretKey: RABBITMQ_URL
+
+components:
+  api:
+    replicas: 1
+    image:
+      repository: orchestrator-api
+      tag: local
+  dashboard:
+    replicas: 1
+    image:
+      repository: dashboard
+      tag: local
+  streamGateway:
+    replicas: 1
+    image:
+      repository: stream-gateway
+      tag: local
+  outboxPublisher:
+    replicas: 1
+    image:
+      repository: outbox-publisher
+      tag: local
+  streamProvisioner:
+    replicas: 1
+    image:
+      repository: stream-provisioner
+      tag: local
+  instanceReconciler:
+    replicas: 1
+    image:
+      repository: instance-reconciler
+      tag: local
+  streamScaler:
+    replicas: 1
+    image:
+      repository: stream-scaler
+      tag: local
+
+migration:
+  enabled: true
+  backoffLimit: 12
+  image:
+    repository: migrator
+    tag: local
+
+mediamtx:
+  enabled: true
+  replicas: 3
+  image:
+    repository: bluenviron/mediamtx
+    tag: 1.18.2
+  logLevel: info
+  ports:
+    rtsp: 8554
+    hls: 8888
+    api: 9997
+    metrics: 9998
+
+postgresql:
+  enabled: true
+  image:
+    useGlobalRegistry: false
+    repository: postgres
+    tag: 16-alpine
+  auth:
+    database: stream_orchestrator
+    username: postgres
+    password: postgres
+  persistence:
+    size: 2Gi
+    storageClassName: ""
+
+rabbitmq:
+  enabled: true
+  image:
+    useGlobalRegistry: false
+    repository: rabbitmq
+    tag: 3.13-management
+  auth:
+    username: guest
+    password: guest
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    api: orchestrator-api.localhost
+    dashboard: dashboard.localhost
+    rabbitmq: rabbitmq.localhost
+    streamGateway: stream-gateway.localhost
+    grafana: grafana.localhost
+    prometheus: prometheus.localhost
+
+monitoring:
+  prometheus:
+    enabled: true
+    image:
+      useGlobalRegistry: false
+      repository: prom/prometheus
+      tag: v2.55.1
+  kubeStateMetrics:
+    enabled: true
+    image:
+      useGlobalRegistry: false
+      repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+      tag: v2.15.0
+  grafana:
+    enabled: true
+    image:
+      useGlobalRegistry: false
+      repository: grafana/grafana
+      tag: 11.3.1
+    adminUser: admin
+    adminPassword: admin
+    anonymousAdmin: true
+    allowEmbedding: true

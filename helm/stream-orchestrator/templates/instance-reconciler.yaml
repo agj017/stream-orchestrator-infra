@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: instance-reconciler
+  namespace: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: instance-reconciler-pod-reader
+  namespace: {{ include "stream-orchestrator.streamingNamespace" . }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: instance-reconciler-pod-reader
+  namespace: {{ include "stream-orchestrator.streamingNamespace" . }}
+subjects:
+  - kind: ServiceAccount
+    name: instance-reconciler
+    namespace: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: instance-reconciler-pod-reader
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: instance-reconciler-node-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: instance-reconciler-node-reader
+subjects:
+  - kind: ServiceAccount
+    name: instance-reconciler
+    namespace: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: instance-reconciler-node-reader
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: instance-reconciler
+  namespace: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+  labels:
+    app: instance-reconciler
+spec:
+  replicas: {{ .Values.components.instanceReconciler.replicas }}
+  selector:
+    matchLabels:
+      app: instance-reconciler
+  template:
+    metadata:
+      labels:
+        app: instance-reconciler
+    spec:
+      serviceAccountName: instance-reconciler
+      containers:
+        - name: instance-reconciler
+          image: {{ include "stream-orchestrator.image" (list . .Values.components.instanceReconciler.image) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: orchestrator-config
+          env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "stream-orchestrator.dbSecretName" . }}
+                  key: {{ include "stream-orchestrator.dbSecretKey" . }}
+

@@ -1,0 +1,45 @@
+minimumLimaVersion: 2.0.0
+
+base:
+  - template:ubuntu-24.04
+
+vmType: vz
+cpus: 4
+memory: 8GiB
+disk: 60GiB
+
+user:
+  name: installer
+  comment: Stream Orchestrator installer
+  home: /home/installer
+  shell: /bin/bash
+
+ssh:
+  loadDotSSHPubKeys: true
+
+mounts: []
+
+timezone: Asia/Seoul
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      usermod -aG sudo installer
+
+      cat >/etc/sudoers.d/90-installer <<'EOF'
+      installer ALL=(ALL) NOPASSWD:ALL
+      EOF
+      chmod 0440 /etc/sudoers.d/90-installer
+
+      apt-get update
+      DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+        openssh-server \
+        python3 \
+        sudo

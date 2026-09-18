@@ -1,0 +1,180 @@
+---
+- name: Assert supported operating system family
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.os_family == "Debian"
+    fail_msg: "The node_bootstrap role currently supports Debian-family systems such as Ubuntu."
+
+- name: Assert installer has sudo access
+  ansible.builtin.command: whoami
+  register: bootstrap_whoami
+  changed_when: false
+  failed_when: bootstrap_whoami.stdout != "root"
+
+- name: Set node hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Configure /etc/hosts entries for cluster nodes
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} STREAM ORCHESTRATOR K8S NODES"
+    block: |
+      {% for host in groups['k8s_cluster'] | default([]) %}
+      {{ hostvars[host].node_ip | default(hostvars[host].ansible_host) }} {{ host }}
+      {% endfor %}
+  when: bootstrap_manage_hosts_file | bool
+
+- name: Ensure apt keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: "{{ bootstrap_required_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install time synchronization package
+  ansible.builtin.apt:
+    name: "{{ bootstrap_time_sync_package }}"
+    state: present
+    update_cache: true
+  when: (bootstrap_time_sync_package | default('') | string | length) > 0
+
+- name: Set timezone
+  ansible.builtin.command: "timedatectl set-timezone {{ bootstrap_timezone }}"
+  changed_when: false
+
+- name: Enable time synchronization service
+  ansible.builtin.service:
+    name: "{{ bootstrap_time_sync_service }}"
+    state: started
+    enabled: true
+  when: bootstrap_time_sync_service | length > 0
+
+- name: Persist required kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {% for module in bootstrap_kernel_modules %}
+      {{ module }}
+      {% endfor %}
+
+- name: Load required kernel modules
+  ansible.builtin.command: "modprobe {{ item }}"
+  changed_when: false
+  loop: "{{ bootstrap_kernel_modules }}"
+
+- name: Persist Kubernetes sysctl settings
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {% for key, value in bootstrap_sysctl_settings.items() %}
+      {{ key }} = {{ value }}
+      {% endfor %}
+
+- name: Apply Kubernetes sysctl settings
+  ansible.builtin.command: sysctl --system
+  changed_when: false
+
+- name: Disable active swap
+  ansible.builtin.command: swapoff -a
+  when: ansible_facts.swaptotal_mb | int > 0
+  changed_when: true
+
+- name: Disable swap entries in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#]\S+\s+\S+\s+swap\s+.*)$'
+    replace: '# \1'
+
+- name: Ensure platform mount point directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop: "{{ bootstrap_mount_points }}"
+
+- name: Install container runtime
+  ansible.builtin.apt:
+    name: "{{ containerd_package_name }}"
+    state: present
+    update_cache: true
+
+- name: Ensure containerd config directory exists
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure containerd for Kubernetes
+  ansible.builtin.template:
+    src: containerd-config.toml.j2
+    dest: "{{ containerd_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart containerd
+
+- name: Enable containerd
+  ansible.builtin.service:
+    name: containerd
+    state: started
+    enabled: true
+
+- name: Configure Kubernetes apt repository
+  ansible.builtin.deb822_repository:
+    name: kubernetes
+    types:
+      - deb
+    uris:
+      - "{{ kubernetes_apt_repository_url }}"
+    suites:
+      - /
+    signed_by: "{{ kubernetes_apt_repository_url }}Release.key"
+    state: present
+  register: kubernetes_apt_repository
+
+- name: Refresh apt cache after adding Kubernetes repository
+  ansible.builtin.apt:
+    update_cache: true
+  when: kubernetes_apt_repository.changed
+
+- name: Install Kubernetes node packages
+  ansible.builtin.apt:
+    name: "{{ kubernetes_packages }}"
+    state: present
+    update_cache: true
+
+- name: Hold Kubernetes package versions
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ kubernetes_packages }}"
+
+- name: Enable kubelet
+  ansible.builtin.service:
+    name: kubelet
+    enabled: true
+
+- name: Configure ufw firewall ports
+  ansible.builtin.command: "ufw allow {{ item }}/tcp"
+  changed_when: true
+  loop: "{{ firewall_allowed_tcp_ports }}"
+  when: bootstrap_manage_firewall | bool

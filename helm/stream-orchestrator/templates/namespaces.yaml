@@ -1,0 +1,17 @@
+{{- if .Values.namespaces.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "stream-orchestrator.streamingNamespace" . }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "stream-orchestrator.monitoringNamespace" . }}
+{{- end }}
+

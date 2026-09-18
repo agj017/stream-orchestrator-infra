@@ -1,0 +1,112 @@
+{{- if .Values.mediamtx.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mediamtx-config
+  namespace: {{ include "stream-orchestrator.streamingNamespace" . }}
+  labels:
+    app: mediamtx
+data:
+  mediamtx.yml: |
+    logLevel: {{ .Values.mediamtx.logLevel }}
+    logDestinations: [stdout]
+    logStructured: false
+
+    authMethod: internal
+    authInternalUsers:
+      - user: any
+        pass:
+        ips: []
+        permissions:
+          - action: publish
+          - action: read
+          - action: playback
+          - action: api
+          - action: metrics
+
+    api: true
+    apiAddress: :{{ .Values.mediamtx.ports.api }}
+    apiAllowOrigins: ['*']
+
+    metrics: true
+    metricsAddress: :{{ .Values.mediamtx.ports.metrics }}
+    metricsAllowOrigins: ['*']
+
+    rtsp: true
+    rtspTransports: [tcp]
+    rtspAddress: :{{ .Values.mediamtx.ports.rtsp }}
+
+    hls: true
+    hlsAddress: :{{ .Values.mediamtx.ports.hls }}
+
+    paths:
+      all_others:
+        source: publisher
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mediamtx
+  namespace: {{ include "stream-orchestrator.streamingNamespace" . }}
+  labels:
+    app: mediamtx
+spec:
+  serviceName: mediamtx-headless
+  replicas: {{ .Values.mediamtx.replicas }}
+  selector:
+    matchLabels:
+      app: mediamtx
+  template:
+    metadata:
+      labels:
+        app: mediamtx
+    spec:
+      containers:
+        - name: mediamtx
+          image: {{ include "stream-orchestrator.image" (list . .Values.mediamtx.image) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: rtsp
+              containerPort: {{ .Values.mediamtx.ports.rtsp }}
+            - name: hls
+              containerPort: {{ .Values.mediamtx.ports.hls }}
+            - name: api
+              containerPort: {{ .Values.mediamtx.ports.api }}
+            - name: metrics
+              containerPort: {{ .Values.mediamtx.ports.metrics }}
+          volumeMounts:
+            - name: config
+              mountPath: /mediamtx.yml
+              subPath: mediamtx.yml
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: mediamtx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediamtx-headless
+  namespace: {{ include "stream-orchestrator.streamingNamespace" . }}
+  labels:
+    app: mediamtx
+spec:
+  clusterIP: None
+  selector:
+    app: mediamtx
+  ports:
+    - name: rtsp
+      port: {{ .Values.mediamtx.ports.rtsp }}
+      targetPort: rtsp
+    - name: hls
+      port: {{ .Values.mediamtx.ports.hls }}
+      targetPort: hls
+    - name: api
+      port: {{ .Values.mediamtx.ports.api }}
+      targetPort: api
+    - name: metrics
+      port: {{ .Values.mediamtx.ports.metrics }}
+      targetPort: metrics
+{{- end }}
+

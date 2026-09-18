@@ -1,0 +1,7 @@
+---
+- name: Bootstrap Linux nodes for Kubernetes
+  hosts: k8s_cluster
+  gather_facts: true
+  become: true
+  roles:
+    - node_bootstrap

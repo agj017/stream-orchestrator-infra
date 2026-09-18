@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: grafana-dashboard-mediamtx-overview
+    namespace: monitoring
+    files:
+      - mediamtx-overview.json=grafana/dashboards/mediamtx-overview.json
+
+resources:
+  - namespace.yaml
+  - orchestrator-config.yaml
+  - orchestrator-secrets.yaml
+  - postgresql.yaml
+  - migration-job.yaml
+  - rabbitmq.yaml
+  - dashboard.yaml
+  - orchestrator-api.yaml
+  - stream-gateway.yaml
+  - outbox-publisher.yaml
+  - stream-provisioner.yaml
+  - instance-reconciler.yaml
+  - stream-scaler.yaml
+  - mediamtx.yaml
+  - kube-state-metrics.yaml
+  - prometheus.yaml
+  - grafana.yaml

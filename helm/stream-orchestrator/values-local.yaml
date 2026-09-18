@@ -1,0 +1,11 @@
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    api: orchestrator-api.localhost
+    dashboard: dashboard.localhost
+    rabbitmq: rabbitmq.localhost
+    streamGateway: stream-gateway.localhost
+    grafana: grafana.localhost
+    prometheus: prometheus.localhost
+

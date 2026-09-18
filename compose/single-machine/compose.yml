@@ -1,0 +1,194 @@
+name: stream-orchestrator-single
+
+x-app-env: &app-env
+  DB_URL: postgres://postgres:postgres@postgres:5432/stream_orchestrator?sslmode=disable
+  RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+  RABBITMQ_EXCHANGE: stream.events
+  RABBITMQ_PROVISION_QUEUE: stream.provision
+  RABBITMQ_STREAM_CREATED_ROUTING_KEY: stream.created
+  RABBITMQ_STREAM_STOP_REQUESTED_ROUTING_KEY: stream.stop_requested
+  OUTBOX_POLL_INTERVAL: 500ms
+  OUTBOX_BATCH_SIZE: "100"
+  OUTBOX_MAX_RETRY: "20"
+  MEDIAMTX_CONTROL_SCHEME: http
+  MEDIAMTX_CONTROL_PORT: "9997"
+  MEDIAMTX_CONTROL_TIMEOUT: 5s
+  MEDIAMTX_CONTROL_BASE_URL: http://mediamtx:9997
+  MEDIAMTX_HLS_SCHEME: http
+  MEDIAMTX_HLS_PORT: "8888"
+  MEDIAMTX_SOURCE_ON_DEMAND: "true"
+  STREAM_PROVIDER: mediamtx
+  DEFAULT_MAX_STREAMS: "500"
+  DEFAULT_MAX_BANDWIDTH_MBPS: "5000"
+  LOG_LEVEL: info
+  LOG_FORMAT: text
+  DB_LOG_QUERIES: "false"
+  DB_LOG_QUERY_ARGS: "false"
+  DB_LOG_SQL: "false"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: stream_orchestrator
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stream_orchestrator"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mediamtx:
+    image: bluenviron/mediamtx:1.18.2
+    ports:
+      - "8554:8554"
+      - "8888:8888"
+      - "9997:9997"
+      - "9998:9998"
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    healthcheck:
+      test: ["CMD", "/mediamtx", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      mediamtx:
+        condition: service_started
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../../k8s/base/grafana/dashboards/mediamtx-overview.json:/etc/grafana/dashboards/mediamtx-overview.json:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ../../..
+      dockerfile: docker/migrator.Dockerfile
+    environment:
+      DB_URL: postgres://postgres:postgres@postgres:5432/stream_orchestrator?sslmode=disable
+    command:
+      - -path=/migrations
+      - -database=postgres://postgres:postgres@postgres:5432/stream_orchestrator?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  orchestrator-api:
+    build:
+      context: ../../..
+      dockerfile: docker/orchestrator-api.Dockerfile
+    environment:
+      <<: *app-env
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  outbox-publisher:
+    build:
+      context: ../../..
+      dockerfile: docker/outbox-publisher.Dockerfile
+    environment:
+      <<: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  stream-provisioner:
+    build:
+      context: ../../..
+      dockerfile: docker/stream-provisioner.Dockerfile
+    environment:
+      <<: *app-env
+      PROVISIONING_MODE: single
+      SINGLE_MEDIAMTX_INSTANCE_ID: 00000000-0000-0000-0000-000000000001
+      SINGLE_MEDIAMTX_INSTANCE_KEY: local/mediamtx
+      SINGLE_MEDIAMTX_NAMESPACE: local
+      SINGLE_MEDIAMTX_POD_NAME: mediamtx
+      SINGLE_MEDIAMTX_HOST: mediamtx
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      mediamtx:
+        condition: service_started
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ../../..
+      dockerfile: docker/dashboard.Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+        VITE_GRAFANA_DASHBOARD_URL: http://localhost:3000/d/mediamtx-overview/mediamtx-overview?orgId=1&kiosk
+        VITE_STREAM_GATEWAY_BASE_URL: http://localhost:8888
+    ports:
+      - "8082:8080"
+    depends_on:
+      orchestrator-api:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  prometheus-data:
+  grafana-data:

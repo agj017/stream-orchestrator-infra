@@ -1,0 +1,28 @@
+---
+bootstrap_timezone: UTC
+bootstrap_manage_hosts_file: false
+bootstrap_manage_firewall: false
+bootstrap_time_sync_package: chrony
+bootstrap_time_sync_service: chrony
+bootstrap_required_packages: []
+bootstrap_kernel_modules:
+  - overlay
+  - br_netfilter
+bootstrap_sysctl_settings:
+  net.bridge.bridge-nf-call-iptables: "1"
+  net.bridge.bridge-nf-call-ip6tables: "1"
+  net.ipv4.ip_forward: "1"
+bootstrap_mount_points: []
+
+containerd_package_name: containerd
+containerd_config_path: /etc/containerd/config.toml
+
+kubernetes_minor_version: "1.34"
+kubernetes_apt_repository_url: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_minor_version }}/deb/"
+kubernetes_packages:
+  - kubelet
+  - kubeadm
+  - kubectl
+kubernetes_pause_image: registry.k8s.io/pause:3.10
+
+firewall_allowed_tcp_ports: []

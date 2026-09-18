@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrator-config
+  namespace: {{ include "stream-orchestrator.orchestratorNamespace" . }}
+data:
+  RABBITMQ_EXCHANGE: {{ .Values.config.rabbitmqExchange | quote }}
+  RABBITMQ_PROVISION_QUEUE: {{ .Values.config.rabbitmqProvisionQueue | quote }}
+  RABBITMQ_STREAM_CREATED_ROUTING_KEY: {{ .Values.config.rabbitmqStreamCreatedRoutingKey | quote }}
+  RABBITMQ_STREAM_STOP_REQUESTED_ROUTING_KEY: {{ .Values.config.rabbitmqStreamStopRequestedRoutingKey | quote }}
+  OUTBOX_POLL_INTERVAL: {{ .Values.config.outboxPollInterval | quote }}
+  OUTBOX_BATCH_SIZE: {{ .Values.config.outboxBatchSize | quote }}
+  OUTBOX_MAX_RETRY: {{ .Values.config.outboxMaxRetry | quote }}
+  PROMETHEUS_URL: {{ printf "http://prometheus.%s.svc.%s:9090" .Values.namespaces.monitoring .Values.global.clusterDomain | quote }}
+  MEDIAMTX_NAMESPACE: {{ include "stream-orchestrator.streamingNamespace" . | quote }}
+  MEDIAMTX_POD_SELECTOR: {{ .Values.config.mediamtxPodSelector | quote }}
+  MEDIAMTX_METRICS_PORT: {{ .Values.mediamtx.ports.metrics | quote }}
+  MEDIAMTX_CONTROL_SCHEME: {{ .Values.config.mediamtxControlScheme | quote }}
+  MEDIAMTX_CONTROL_PORT: {{ .Values.mediamtx.ports.api | quote }}
+  MEDIAMTX_CONTROL_TIMEOUT: {{ .Values.config.mediamtxControlTimeout | quote }}
+  MEDIAMTX_HEADLESS_SERVICE_NAME: "mediamtx-headless"
+  MEDIAMTX_HLS_SCHEME: "http"
+  MEDIAMTX_HLS_PORT: {{ .Values.mediamtx.ports.hls | quote }}
+  MEDIAMTX_SOURCE_ON_DEMAND: {{ .Values.config.mediamtxSourceOnDemand | quote }}
+  KUBERNETES_CLUSTER_DOMAIN: {{ .Values.global.clusterDomain | quote }}
+  STREAM_GATEWAY_PORT: "8081"
+  STREAM_PROVIDER: {{ .Values.config.streamProvider | quote }}
+  DEFAULT_MAX_STREAMS: {{ .Values.config.defaultMaxStreams | quote }}
+  DEFAULT_MAX_BANDWIDTH_MBPS: {{ .Values.config.defaultMaxBandwidthMbps | quote }}
+  MEDIAMTX_STATEFULSET_NAME: "mediamtx"
+  SCALER_INTERVAL: {{ .Values.config.scalerInterval | quote }}
+  SCALER_MIN_REPLICAS: {{ .Values.config.scalerMinReplicas | quote }}
+  SCALER_MAX_REPLICAS: {{ .Values.config.scalerMaxReplicas | quote }}
+  SCALER_TARGET_UTILIZATION: {{ .Values.config.scalerTargetUtilization | quote }}
+  SCALER_BUFFER_REPLICAS: {{ .Values.config.scalerBufferReplicas | quote }}
+  COLLECT_TIMEOUT: {{ .Values.config.collectTimeout | quote }}
+  COLLECT_CONCURRENCY: {{ .Values.config.collectConcurrency | quote }}
+  RECONCILE_INTERVAL: {{ .Values.config.reconcileInterval | quote }}
+  HEARTBEAT_TIMEOUT: {{ .Values.config.heartbeatTimeout | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.config.logFormat | quote }}
+  DB_LOG_QUERIES: {{ .Values.config.dbLogQueries | quote }}
+  DB_LOG_QUERY_ARGS: {{ .Values.config.dbLogQueryArgs | quote }}
+  DB_LOG_SQL: {{ .Values.config.dbLogSql | quote }}
+
