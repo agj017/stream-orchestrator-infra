@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: stream-provisioner
-          image: stream-orchestrator/stream-provisioner:local
+          image: agj017/funnel-stream-provisioner:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:

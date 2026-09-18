@@ -15,7 +15,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: migrate
-          image: stream-orchestrator/migrator:local
+          image: agj017/funnel-migrator:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: DB_URL

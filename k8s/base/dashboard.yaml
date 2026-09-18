@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: dashboard
-          image: stream-orchestrator/dashboard:local
+          image: agj017/funnel-dashboard:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
