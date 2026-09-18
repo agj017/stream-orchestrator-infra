@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: stream-gateway
-          image: stream-orchestrator/stream-gateway:local
+          image: agj017/funnel-stream-gateway:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:

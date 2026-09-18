@@ -1,5 +1,5 @@
 global:
-  imageRegistry: stream-orchestrator
+  imageRegistry: agj017
   imagePullPolicy: IfNotPresent
   clusterDomain: cluster.local
 
@@ -59,45 +59,45 @@ components:
   api:
     replicas: 1
     image:
-      repository: orchestrator-api
-      tag: local
+      repository: funnel-orchestrator-api
+      tag: latest
   dashboard:
     replicas: 1
     image:
-      repository: dashboard
-      tag: local
+      repository: funnel-dashboard
+      tag: latest
   streamGateway:
     replicas: 1
     image:
-      repository: stream-gateway
-      tag: local
+      repository: funnel-stream-gateway
+      tag: latest
   outboxPublisher:
     replicas: 1
     image:
-      repository: outbox-publisher
-      tag: local
+      repository: funnel-outbox-publisher
+      tag: latest
   streamProvisioner:
     replicas: 1
     image:
-      repository: stream-provisioner
-      tag: local
+      repository: funnel-stream-provisioner
+      tag: latest
   instanceReconciler:
     replicas: 1
     image:
-      repository: instance-reconciler
-      tag: local
+      repository: funnel-instance-reconciler
+      tag: latest
   streamScaler:
     replicas: 1
     image:
-      repository: stream-scaler
-      tag: local
+      repository: funnel-stream-scaler
+      tag: latest
 
 migration:
   enabled: true
   backoffLimit: 12
   image:
-    repository: migrator
-    tag: local
+    repository: funnel-migrator
+    tag: latest
 
 mediamtx:
   enabled: true

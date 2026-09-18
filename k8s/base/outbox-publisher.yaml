@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: outbox-publisher
-          image: stream-orchestrator/outbox-publisher:local
+          image: agj017/funnel-outbox-publisher:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:

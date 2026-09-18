@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: orchestrator-api
-          image: stream-orchestrator/orchestrator-api:local
+          image: agj017/funnel-orchestrator-api:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: DB_URL

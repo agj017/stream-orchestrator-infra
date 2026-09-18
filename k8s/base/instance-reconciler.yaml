@@ -70,7 +70,7 @@ spec:
       serviceAccountName: instance-reconciler
       containers:
         - name: instance-reconciler
-          image: stream-orchestrator/instance-reconciler:local
+          image: agj017/funnel-instance-reconciler:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:

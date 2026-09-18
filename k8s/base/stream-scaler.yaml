@@ -48,7 +48,7 @@ spec:
       serviceAccountName: stream-scaler
       containers:
         - name: stream-scaler
-          image: stream-orchestrator/stream-scaler:local
+          image: agj017/funnel-stream-scaler:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
