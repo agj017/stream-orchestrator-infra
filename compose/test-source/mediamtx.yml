@@ -1,0 +1,39 @@
+logLevel: info
+logDestinations: [stdout]
+logStructured: false
+
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+      - action: api
+      - action: metrics
+
+api: true
+apiAddress: :9997
+apiAllowOrigins: ['*']
+
+metrics: true
+metricsAddress: :9998
+metricsAllowOrigins: ['*']
+
+rtsp: true
+rtspTransports: [tcp]
+rtspAddress: :8554
+
+hls: true
+hlsAddress: :8888
+hlsAlwaysRemux: true
+
+paths:
+  live/cam-1:
+    source: publisher
+  live/cam-2:
+    source: publisher
+  live/cam-3:
+    source: publisher
