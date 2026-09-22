@@ -2,10 +2,10 @@ services:
   test-source:
     image: bluenviron/mediamtx:1.18.2
     ports:
-      - "${RTSP_PORT:-8554}:8554"
-      - "${HLS_PORT:-8888}:8888"
-      - "${API_PORT:-9997}:9997"
-      - "${METRICS_PORT:-9998}:9998"
+      - "${RTSP_PORT:-18554}:8554"
+      - "${HLS_PORT:-18888}:8888"
+      - "${API_PORT:-19997}:9997"
+      - "${METRICS_PORT:-19998}:9998"
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
     restart: unless-stopped
