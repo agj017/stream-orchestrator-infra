@@ -1,0 +1,101 @@
+services:
+  test-source:
+    image: bluenviron/mediamtx:1.18.2
+    ports:
+      - "${RTSP_PORT:-8554}:8554"
+      - "${HLS_PORT:-8888}:8888"
+      - "${API_PORT:-9997}:9997"
+      - "${METRICS_PORT:-9998}:9998"
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    restart: unless-stopped
+
+  test-publisher-cam-1:
+    image: lscr.io/linuxserver/ffmpeg:latest
+    depends_on:
+      - test-source
+    entrypoint: ["ffmpeg"]
+    command:
+      - -re
+      - -f
+      - lavfi
+      - -i
+      - testsrc2=size=${CAM_1_SIZE:-1280x720}:rate=${CAM_1_RATE:-30}
+      - -c:v
+      - libx264
+      - -preset
+      - veryfast
+      - -tune
+      - zerolatency
+      - -pix_fmt
+      - yuv420p
+      - -g
+      - "${CAM_1_GOP:-60}"
+      - -b:v
+      - "${CAM_1_BITRATE:-2500k}"
+      - -f
+      - rtsp
+      - -rtsp_transport
+      - tcp
+      - rtsp://test-source:8554/live/cam-1
+    restart: unless-stopped
+
+  test-publisher-cam-2:
+    image: lscr.io/linuxserver/ffmpeg:latest
+    depends_on:
+      - test-source
+    entrypoint: ["ffmpeg"]
+    command:
+      - -re
+      - -f
+      - lavfi
+      - -i
+      - smptebars=size=${CAM_2_SIZE:-1280x720}:rate=${CAM_2_RATE:-30}
+      - -c:v
+      - libx264
+      - -preset
+      - veryfast
+      - -tune
+      - zerolatency
+      - -pix_fmt
+      - yuv420p
+      - -g
+      - "${CAM_2_GOP:-60}"
+      - -b:v
+      - "${CAM_2_BITRATE:-2500k}"
+      - -f
+      - rtsp
+      - -rtsp_transport
+      - tcp
+      - rtsp://test-source:8554/live/cam-2
+    restart: unless-stopped
+
+  test-publisher-cam-3:
+    image: lscr.io/linuxserver/ffmpeg:latest
+    depends_on:
+      - test-source
+    entrypoint: ["ffmpeg"]
+    command:
+      - -re
+      - -f
+      - lavfi
+      - -i
+      - mandelbrot=size=${CAM_3_SIZE:-1280x720}:rate=${CAM_3_RATE:-30}
+      - -c:v
+      - libx264
+      - -preset
+      - veryfast
+      - -tune
+      - zerolatency
+      - -pix_fmt
+      - yuv420p
+      - -g
+      - "${CAM_3_GOP:-60}"
+      - -b:v
+      - "${CAM_3_BITRATE:-2500k}"
+      - -f
+      - rtsp
+      - -rtsp_transport
+      - tcp
+      - rtsp://test-source:8554/live/cam-3
+    restart: unless-stopped
