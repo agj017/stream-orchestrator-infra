@@ -20,34 +20,37 @@ docker compose -f compose/test-source/compose.yml down
 RTSP:
 
 ```text
-rtsp://localhost:8554/live/cam-1
-rtsp://localhost:8554/live/cam-2
-rtsp://localhost:8554/live/cam-3
+rtsp://localhost:18554/live/cam-1
+rtsp://localhost:18554/live/cam-2
+rtsp://localhost:18554/live/cam-3
 ```
 
 HLS:
 
 ```text
-http://localhost:8888/live/cam-1/index.m3u8
-http://localhost:8888/live/cam-2/index.m3u8
-http://localhost:8888/live/cam-3/index.m3u8
+http://localhost:18888/live/cam-1/index.m3u8
+http://localhost:18888/live/cam-2/index.m3u8
+http://localhost:18888/live/cam-3/index.m3u8
 ```
 
 ## Port Overrides
 
-Use environment variables when default ports conflict with another local stack.
+The default host ports are defined in `.env` so this bundle can run alongside
+the single-machine stack without conflicting with its MediaMTX ports.
+
+Use environment variables when you need a different local port set.
 
 ```bash
-RTSP_PORT=18554 HLS_PORT=18888 API_PORT=19997 METRICS_PORT=19998 \
+RTSP_PORT=28554 HLS_PORT=28888 API_PORT=29997 METRICS_PORT=29998 \
   docker compose -f compose/test-source/compose.yml up -d
 ```
 
 With the example above, the RTSP URLs become:
 
 ```text
-rtsp://localhost:18554/live/cam-1
-rtsp://localhost:18554/live/cam-2
-rtsp://localhost:18554/live/cam-3
+rtsp://localhost:28554/live/cam-1
+rtsp://localhost:28554/live/cam-2
+rtsp://localhost:28554/live/cam-3
 ```
 
 ## Camera Overrides
