@@ -1,7 +1,7 @@
 # RTSP Test Source
 
 Standalone Docker Compose bundle for running three reusable virtual camera
-streams through MediaMTX.
+streams through a local stream server.
 
 ## Start
 
