@@ -4,6 +4,8 @@ services:
     ports:
       - "${RTSP_PORT:-18554}:8554"
       - "${HLS_PORT:-18888}:8888"
+      - "${WEBRTC_PORT:-18889}:8889"
+      - "${WEBRTC_UDP_PORT:-18189}:8189/udp"
       - "${API_PORT:-19997}:9997"
       - "${METRICS_PORT:-19998}:9998"
     volumes:
