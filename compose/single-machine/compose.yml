@@ -114,6 +114,7 @@ services:
 
   migrate:
     image: agj017/funnel-migrator:latest
+    pull_policy: always
     environment:
       DB_URL: postgres://postgres:postgres@postgres:5432/stream_orchestrator?sslmode=disable
     command:
@@ -127,6 +128,7 @@ services:
 
   orchestrator-api:
     image: agj017/funnel-orchestrator-api:latest
+    pull_policy: always
     environment:
       <<: *app-env
     ports:
@@ -138,6 +140,7 @@ services:
 
   outbox-publisher:
     image: agj017/funnel-outbox-publisher:latest
+    pull_policy: always
     environment:
       <<: *app-env
     depends_on:
@@ -149,6 +152,7 @@ services:
 
   stream-provisioner:
     image: agj017/funnel-stream-provisioner:latest
+    pull_policy: always
     environment:
       <<: *app-env
       PROVISIONING_MODE: single
@@ -168,6 +172,7 @@ services:
 
   dashboard:
     image: agj017/funnel-dashboard:latest
+    pull_policy: always
     ports:
       - "8082:8080"
     depends_on:

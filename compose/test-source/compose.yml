@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
 
   test-publisher-cam-1:
-    image: lscr.io/linuxserver/ffmpeg:latest
+    image: lscr.io/linuxserver/ffmpeg:version-9.0-cli
     depends_on:
       - test-source
     entrypoint: ["ffmpeg"]
@@ -43,7 +43,7 @@ services:
     restart: unless-stopped
 
   test-publisher-cam-2:
-    image: lscr.io/linuxserver/ffmpeg:latest
+    image: lscr.io/linuxserver/ffmpeg:version-9.0-cli
     depends_on:
       - test-source
     entrypoint: ["ffmpeg"]
@@ -73,7 +73,7 @@ services:
     restart: unless-stopped
 
   test-publisher-cam-3:
-    image: lscr.io/linuxserver/ffmpeg:latest
+    image: lscr.io/linuxserver/ffmpeg:version-9.0-cli
     depends_on:
       - test-source
     entrypoint: ["ffmpeg"]
